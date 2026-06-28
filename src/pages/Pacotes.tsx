@@ -98,8 +98,18 @@ export function Pacotes() {
 
   return (
     <div className="h-full w-full flex flex-col items-center justify-center bg-[#F2E4CC] relative overflow-hidden px-4">
-      <button onClick={() => setShowPopup(true)} className="absolute top-10 left-6 bg-[#422422] text-[#F2E4CC] p-4 rounded-full shadow-lg z-50 active:scale-95 transition-all"><Plus size={20} /></button>
-      <div className="absolute right-6 top-10 bg-[#422422] text-[#F2E4CC] px-4 py-2 font-alfa text-[10px] rounded-xl z-20">{totalPacks}x</div>
+      {/* Botões Superiores - Agora sempre visíveis via Portal ou Renderização Fixa */}
+      <div className="absolute top-10 left-6 z-[5000]">
+        <button onClick={() => setShowPopup(true)} className="bg-[#422422] text-[#F2E4CC] p-4 rounded-full shadow-lg active:scale-95 transition-all">
+          <Plus size={20} />
+        </button>
+      </div>
+
+      <div className="absolute right-6 top-10 z-[5000]">
+        <div className="bg-[#422422] text-[#F2E4CC] px-4 py-2 font-alfa text-[10px] rounded-xl shadow-lg">
+          {totalPacks}x
+        </div>
+      </div>
 
       <div className="flex-1 w-full flex flex-col items-center justify-center relative">
         {currentModelType && !showCardsPopup ? (
@@ -117,9 +127,10 @@ export function Pacotes() {
         )}
       </div>
 
+      {/* Resto dos popups e AnimatePresence permanecem iguais... */}
       <AnimatePresence>
         {showPopup && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[6000] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-[#F2E4CC] w-full max-w-sm p-8 rounded-3xl border-4 border-[#422422] relative">
               <button onClick={() => setShowPopup(false)} className="absolute top-4 right-4 text-[#422422]/50"><X size={20}/></button>
               <h3 className="font-alfa text-sm text-[#422422] text-center mb-6 uppercase tracking-widest">Resgatar Código</h3>
@@ -134,7 +145,7 @@ export function Pacotes() {
 
       <AnimatePresence>
         {showCardsPopup && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[3000] flex flex-col items-center justify-center p-6 bg-black/95">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[7000] flex flex-col items-center justify-center p-6 bg-black/95">
             <h2 className="font-alfa text-xs text-white mb-12 uppercase tracking-widest">COLETAR {collectedCount + 1}/{newCards.length}</h2>
             <div className="relative w-[220px] h-[360px] flex items-center justify-center">
               <AnimatePresence mode="popLayout">
