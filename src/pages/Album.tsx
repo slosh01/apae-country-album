@@ -8,9 +8,14 @@ import { useToast } from '../components/CustomToast';
 const TOTAL_CARDS = 42;
 
 export function Album() {
-  const { userDetails } = useStore();
+  const { userDetails, setUserDetails } = useStore();
   const { addToast } = useToast();
   const [cardsInfo, setCardsInfo] = useState<any[]>([]);
+
+  // Estados para o popup de coleta (igual ao de pacotes)
+  const [showCollectPopup, setShowCollectPopup] = useState(false);
+  const [newCards, setNewCards] = useState<any[]>([]);
+  const [collectedCount, setCollectedCount] = useState(0);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'cards'), (snap) => {
@@ -66,14 +71,72 @@ export function Album() {
         })}
       </div>
 
-      <ExchangeSection cardsInfo={cardsInfo} userOwnedCardsArray={userDetails?.cards || []} userUid={userDetails?.uid} addToast={addToast} />
+      {/* Pop-up de Coleta (Trocas) */}
+      <AnimatePresence>
+        {showCollectPopup && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[3000] flex flex-col items-center justify-center p-6 bg-black/95">
+            <h2 className="font-alfa text-xs text-white mb-12 uppercase tracking-widest">
+              COLETAR {collectedCount + 1}/{newCards.length}
+            </h2>
+            <div className="relative w-[220px] h-[360px] flex items-center justify-center">
+              <AnimatePresence mode="popLayout">
+                {newCards.slice(collectedCount).reverse().map((c, idx) => {
+                  const actualIndex = newCards.length - 1 - idx;
+                  const stackIdx = actualIndex - collectedCount;
+                  const isTop = actualIndex === collectedCount;
+                  const rotation = isTop ? 0 : (stackIdx === 1 ? -22.5 : -45);
+
+                  return (
+                    <motion.div
+                      key={c.id + '-' + actualIndex}
+                      style={{ zIndex: 100 - actualIndex }}
+                      initial={{ scale: 0, y: 50 }}
+                      animate={{ scale: 1, y: isTop ? 0 : stackIdx * 8, rotate: rotation, opacity: 1 }}
+                      exit={{ x: 300, opacity: 0, transition: { duration: 0.3 } }}
+                      onClick={() => {
+                        if (isTop) {
+                          setCollectedCount(prev => prev + 1);
+                          if (collectedCount + 1 >= newCards.length) {
+                            setTimeout(() => {
+                              setShowCollectPopup(false);
+                              setCollectedCount(0);
+                              setNewCards([]);
+                            }, 400);
+                          }
+                        }
+                      }}
+                      className="absolute inset-0 cursor-pointer"
+                    >
+                      <img src={`/cards/${c.id}.png`} alt={c.id} className="w-full h-full object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]" />
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+            <p className="mt-12 text-[#8F5D2C] font-alfa text-[7px] uppercase tracking-widest animate-pulse">Toque para coletar</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <ExchangeSection
+        cardsInfo={cardsInfo}
+        userOwnedCardsArray={userDetails?.cards || []}
+        userUid={userDetails?.uid}
+        setUserDetails={setUserDetails}
+        addToast={addToast}
+        onSuccess={(rewarded: any[]) => {
+            setNewCards(rewarded);
+            setShowCollectPopup(true);
+        }}
+      />
     </div>
   );
 }
 
-function ExchangeSection({ cardsInfo, userOwnedCardsArray, userUid, addToast }: any) {
+function ExchangeSection({ cardsInfo, userOwnedCardsArray, userUid, setUserDetails, addToast, onSuccess }: any) {
   const [isProcessing, setIsProcessing] = useState(false);
   if (!userUid) return null;
+
   const counts: Record<string, number> = {};
   userOwnedCardsArray.forEach((id: string) => { counts[id] = (counts[id] || 0) + 1; });
   let totalDuplicates = 0;
@@ -84,7 +147,8 @@ function ExchangeSection({ cardsInfo, userOwnedCardsArray, userUid, addToast }: 
     if (totalDuplicates < req) { addToast(`Necessário ${req} repetidas`, "error"); return; }
     const ownedSet = new Set(userOwnedCardsArray);
     const missing = cardsInfo.filter((c: any) => !ownedSet.has(c.id));
-    if (missing.length === 0) { addToast("Completo!", "info"); return; }
+    if (missing.length === 0) { addToast("Álbum Completo!", "info"); return; }
+
     setIsProcessing(true);
     try {
       const drawn = [...missing].sort(() => 0.5 - Math.random()).slice(0, rew);
@@ -92,9 +156,16 @@ function ExchangeSection({ cardsInfo, userOwnedCardsArray, userUid, addToast }: 
       const spent = duplicatesList.slice(0, req);
       spent.forEach(sid => { const idx = updated.indexOf(sid); if (idx > -1) updated.splice(idx, 1); });
       drawn.forEach((c: any) => updated.push(c.id));
-      await updateDoc(doc(db, 'users', userUid), { cards: updated });
+
+      const userRef = doc(db, 'users', userUid);
+      await updateDoc(userRef, { cards: updated });
+
+      // ATUALIZAÇÃO REAL-TIME: Atualiza o store global imediatamente
+      setUserDetails({ ...useStore.getState().userDetails, cards: updated } as any);
+
+      onSuccess(drawn);
       addToast("Troca realizada!", "success");
-    } catch (e) { addToast("Erro", "error"); } finally { setIsProcessing(false); }
+    } catch (e) { addToast("Erro na troca", "error"); } finally { setIsProcessing(false); }
   };
 
   return (

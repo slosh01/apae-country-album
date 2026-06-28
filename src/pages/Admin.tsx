@@ -178,14 +178,44 @@ export function Admin() {
           <div className="space-y-3">
             <h2 className="font-alfa text-xs text-[#422422] uppercase mb-4">Usuários</h2>
             {allUsers.map(u => (
-              <div key={u.id} className="bg-white/40 p-3 rounded-xl border border-[#422422]/10 flex items-center justify-between">
-                <div className="min-w-0 flex-1">
-                  <p className="font-alfa text-[9px] uppercase truncate">{u.name}</p>
-                  <p className="text-[7px] text-gray-500 uppercase font-bold">{u.cards?.length || 0} Fig | { (u.premiumPacks||0) + (u.freePacks||0) } Packs</p>
+              <div key={u.id} className="bg-white/40 p-3 rounded-xl border border-[#422422]/10 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-alfa text-[9px] uppercase truncate">{u.name}</p>
+                    <p className="text-[7px] text-gray-500 uppercase font-bold">{u.cards?.length || 0} Fig | { (u.premiumPacks||0) + (u.freePacks||0) } Packs</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => toggleRankingVisibility(u.id, u.hideFromRanking)}
+                      className="p-2 text-[#422422] hover:bg-[#422422]/5 rounded-lg transition-colors"
+                      title={u.hideFromRanking ? "Mostrar no Ranking" : "Ocultar do Ranking"}
+                    >
+                      {u.hideFromRanking ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`DESEJA ZERAR O INVENTÁRIO DE "${u.name.toUpperCase()}"?\nEsta ação removerá todas as figurinhas e pacotes dele permanentemente.`)) return;
+                        try {
+                          await updateDoc(doc(db, 'users', u.id), {
+                            cards: [],
+                            freePacks: 0,
+                            premiumPacks: 0,
+                            packs: 0
+                          });
+                          addToast("Inventário zerado!", "success");
+                          fetchUsers();
+                        } catch (e) {
+                          addToast("Erro ao zerar", "error");
+                        }
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Zerar Inventário"
+                    >
+                      <RefreshCw size={16} />
+                    </button>
+                  </div>
                 </div>
-                <button onClick={() => toggleRankingVisibility(u.id, u.hideFromRanking)} className="p-2 text-[#422422]">
-                  {u.hideFromRanking ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+                {u.phone && <p className="text-[6px] opacity-40 -mt-2 uppercase font-bold tracking-widest">TEL: {u.phone}</p>}
               </div>
             ))}
           </div>
