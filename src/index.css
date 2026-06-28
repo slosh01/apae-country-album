@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --font-alfa: "Alfa Slab One", serif;
+
+  --color-cordel-bg: #F2E4CC;
+  --color-cordel-main: #422422;
+  --color-cordel-secondary: #524D35;
+  --color-cordel-accent: #8F5D2C;
+}
+
+body {
+  background-color: var(--color-cordel-bg);
+  color: var(--color-cordel-main);
+  font-family: var(--font-alfa);
+  /* Proteção básica contra salvar imagens */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+* {
+  font-family: var(--font-alfa);
+}
+
+img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
